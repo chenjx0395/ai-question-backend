@@ -1,0 +1,22 @@
+{
+  "options": [
+    {
+      "result": "I",
+      // 如果是测评类，则用 reslut 来保存答案属性
+      "score": 1,
+      // 如果是得分类，则用 score 来设置本题分数
+      "value": "A选项",
+      //选项内容
+      "key": "A"
+      //选项 key
+    },
+    {
+      "result": "E",
+      // 如果是测评类，则用 reslut 来保存答案属性
+      "score": 0,
+      "value": "B选项",
+      "key": "B"
+    }
+  ],
+  "title": "题目"
+}

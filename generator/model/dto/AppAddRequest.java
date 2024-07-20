@@ -1,4 +1,4 @@
-package ${packageName}.model.dto.${dataKey};
+package com.cjx.aiquestion.model.dto.app;
 
 import lombok.Data;
 
@@ -6,18 +6,13 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * 更新${dataName}请求
+ * 创建应用请求
  *
  * @author cjx
  *
  */
 @Data
-public class ${upperDataKey}UpdateRequest implements Serializable {
-
-    /**
-     * id
-     */
-    private Long id;
+public class AppAddRequest implements Serializable {
 
     /**
      * 标题
