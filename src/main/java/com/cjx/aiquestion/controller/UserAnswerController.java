@@ -14,9 +14,12 @@ import com.cjx.aiquestion.model.dto.useranswer.UserAnswerAddRequest;
 import com.cjx.aiquestion.model.dto.useranswer.UserAnswerEditRequest;
 import com.cjx.aiquestion.model.dto.useranswer.UserAnswerQueryRequest;
 import com.cjx.aiquestion.model.dto.useranswer.UserAnswerUpdateRequest;
+import com.cjx.aiquestion.model.entity.App;
 import com.cjx.aiquestion.model.entity.User;
 import com.cjx.aiquestion.model.entity.UserAnswer;
 import com.cjx.aiquestion.model.vo.UserAnswerVO;
+import com.cjx.aiquestion.scoring.ScoringStrategyExecutor;
+import com.cjx.aiquestion.service.AppService;
 import com.cjx.aiquestion.service.UserAnswerService;
 import com.cjx.aiquestion.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +46,10 @@ public class UserAnswerController {
 
     @Resource
     private UserService userService;
+    @Resource
+    private ScoringStrategyExecutor scoringStrategyExecutor;
+    @Resource
+    private AppService appService;
 
     // region 增删改查
 
@@ -59,11 +66,13 @@ public class UserAnswerController {
         // todo 在此处将实体类和 DTO 进行转换
         UserAnswer userAnswer = new UserAnswer();
         BeanUtils.copyProperties(userAnswerAddRequest, userAnswer);
-        List<String> resultProp = userAnswerAddRequest.getChoices();
-        String jsonStr = JSONUtil.toJsonStr(resultProp);
+        List<String> choices = userAnswerAddRequest.getChoices();
+        String jsonStr = JSONUtil.toJsonStr(choices);
         userAnswer.setChoices(jsonStr);
         // 数据校验
         userAnswerService.validUserAnswer(userAnswer, true);
+        Long appId = userAnswerAddRequest.getAppId();
+        App app = appService.getById(appId);
         // todo 填充默认值
         User loginUser = userService.getLoginUser(request);
         userAnswer.setUserId(loginUser.getId());
@@ -72,6 +81,15 @@ public class UserAnswerController {
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         // 返回新写入的数据 id
         long newUserAnswerId = userAnswer.getId();
+        // 调用评分模块
+        try {
+            UserAnswer userAnswerWithResult = scoringStrategyExecutor.doScore(choices, app);
+            userAnswerWithResult.setId(newUserAnswerId);
+            userAnswerService.updateById(userAnswerWithResult);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "评分错误");
+        }
         return ResultUtils.success(newUserAnswerId);
     }
 
