@@ -19,6 +19,12 @@ import java.util.List;
 @Data
 public class ScoringResultQueryRequest extends PageRequest implements Serializable {
 
+
+    /**
+     * 搜索词
+     */
+    private String searchText;
+
     /**
      * id
      */
@@ -42,7 +48,7 @@ public class ScoringResultQueryRequest extends PageRequest implements Serializab
     /**
      * 结果属性集合 JSON，如 [I,S,T,J]
      */
-    private List<String> resultProp;
+    private String resultProp;
 
     /**
      * 结果得分范围，如 80，表示 80及以上的分数命中此结果

@@ -17,6 +17,10 @@ import java.util.List;
 public class ScoringResultEditRequest implements Serializable {
 
 
+    /**
+     * id
+     */
+    private Long id;
 
     /**
      * 结果名称，如物流师

@@ -15,6 +15,7 @@ import com.cjx.aiquestion.model.dto.app.AppQueryRequest;
 import com.cjx.aiquestion.model.dto.app.AppUpdateRequest;
 import com.cjx.aiquestion.model.entity.App;
 import com.cjx.aiquestion.model.entity.User;
+import com.cjx.aiquestion.model.enums.AppTypeEnum;
 import com.cjx.aiquestion.model.vo.AppVO;
 import com.cjx.aiquestion.service.AppService;
 import com.cjx.aiquestion.service.UserService;
@@ -24,6 +25,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+
+import static com.cjx.aiquestion.model.enums.ReviewStatusEnum.TO_BE_REVIEWED;
 
 /**
  * 应用接口
@@ -54,7 +57,7 @@ public class AppController {
     @PostMapping("/add")
     public BaseResponse<Long> addApp(@RequestBody AppAddRequest appAddRequest, HttpServletRequest request) {
         ThrowUtils.throwIf(appAddRequest == null, ErrorCode.PARAMS_ERROR);
-        // todo 在此处将实体类和 DTO 进行转换
+        //  在此处将实体类和 DTO 进行转换
         App app = new App();
         BeanUtils.copyProperties(appAddRequest, app);
         // 数据校验
@@ -62,6 +65,7 @@ public class AppController {
         // todo 填充默认值
         User loginUser = userService.getLoginUser(request);
         app.setUserId(loginUser.getId());
+        app.setReviewStatus(TO_BE_REVIEWED.getValue());
         // 写入数据库
         boolean result = appService.save(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
@@ -109,7 +113,7 @@ public class AppController {
         if (appUpdateRequest == null || appUpdateRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        // todo 在此处将实体类和 DTO 进行转换
+        //  在此处将实体类和 DTO 进行转换
         App app = new App();
         BeanUtils.copyProperties(appUpdateRequest, app);
         // 数据校验
@@ -215,12 +219,14 @@ public class AppController {
         if (appEditRequest == null || appEditRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        // todo 在此处将实体类和 DTO 进行转换
+        //  在此处将实体类和 DTO 进行转换
         App app = new App();
         BeanUtils.copyProperties(appEditRequest, app);
         // 数据校验
         appService.validApp(app, false);
         User loginUser = userService.getLoginUser(request);
+        //重置审核状态
+        app.setReviewStatus(TO_BE_REVIEWED.getValue());
         // 判断是否存在
         long id = appEditRequest.getId();
         App oldApp = appService.getById(id);

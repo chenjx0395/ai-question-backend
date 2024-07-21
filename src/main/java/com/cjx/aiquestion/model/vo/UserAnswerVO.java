@@ -88,6 +88,11 @@ public class UserAnswerVO implements Serializable {
     private UserVO user;
 
     /**
+     * 用户id
+     */
+    private Long userId;
+
+    /**
      * 封装类转对象
      *
      * @param userAnswerVO

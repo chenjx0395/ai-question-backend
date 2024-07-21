@@ -1,5 +1,6 @@
 package com.cjx.aiquestion.controller;
 
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cjx.aiquestion.annotation.AuthCheck;
 import com.cjx.aiquestion.common.BaseResponse;
@@ -9,12 +10,12 @@ import com.cjx.aiquestion.common.ResultUtils;
 import com.cjx.aiquestion.constant.UserConstant;
 import com.cjx.aiquestion.exception.BusinessException;
 import com.cjx.aiquestion.exception.ThrowUtils;
-import com.cjx.aiquestion.model.dto.userAnswer.UserAnswerAddRequest;
-import com.cjx.aiquestion.model.dto.userAnswer.UserAnswerEditRequest;
-import com.cjx.aiquestion.model.dto.userAnswer.UserAnswerQueryRequest;
-import com.cjx.aiquestion.model.dto.userAnswer.UserAnswerUpdateRequest;
-import com.cjx.aiquestion.model.entity.UserAnswer;
+import com.cjx.aiquestion.model.dto.useranswer.UserAnswerAddRequest;
+import com.cjx.aiquestion.model.dto.useranswer.UserAnswerEditRequest;
+import com.cjx.aiquestion.model.dto.useranswer.UserAnswerQueryRequest;
+import com.cjx.aiquestion.model.dto.useranswer.UserAnswerUpdateRequest;
 import com.cjx.aiquestion.model.entity.User;
+import com.cjx.aiquestion.model.entity.UserAnswer;
 import com.cjx.aiquestion.model.vo.UserAnswerVO;
 import com.cjx.aiquestion.service.UserAnswerService;
 import com.cjx.aiquestion.service.UserService;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * 用户答题记录接口
@@ -57,6 +59,9 @@ public class UserAnswerController {
         // todo 在此处将实体类和 DTO 进行转换
         UserAnswer userAnswer = new UserAnswer();
         BeanUtils.copyProperties(userAnswerAddRequest, userAnswer);
+        List<String> resultProp = userAnswerAddRequest.getChoices();
+        String jsonStr = JSONUtil.toJsonStr(resultProp);
+        userAnswer.setChoices(jsonStr);
         // 数据校验
         userAnswerService.validUserAnswer(userAnswer, true);
         // todo 填充默认值
@@ -112,6 +117,9 @@ public class UserAnswerController {
         // todo 在此处将实体类和 DTO 进行转换
         UserAnswer userAnswer = new UserAnswer();
         BeanUtils.copyProperties(userAnswerUpdateRequest, userAnswer);
+        List<String> resultProp = userAnswerUpdateRequest.getChoices();
+        String jsonStr = JSONUtil.toJsonStr(resultProp);
+        userAnswer.setChoices(jsonStr);
         // 数据校验
         userAnswerService.validUserAnswer(userAnswer, false);
         // 判断是否存在
@@ -218,6 +226,9 @@ public class UserAnswerController {
         // todo 在此处将实体类和 DTO 进行转换
         UserAnswer userAnswer = new UserAnswer();
         BeanUtils.copyProperties(userAnswerEditRequest, userAnswer);
+        List<String> resultProp = userAnswerEditRequest.getChoices();
+        String jsonStr = JSONUtil.toJsonStr(resultProp);
+        userAnswer.setChoices(jsonStr);
         // 数据校验
         userAnswerService.validUserAnswer(userAnswer, false);
         User loginUser = userService.getLoginUser(request);

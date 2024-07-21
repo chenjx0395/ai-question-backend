@@ -1,5 +1,6 @@
 package com.cjx.aiquestion.controller;
 
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cjx.aiquestion.annotation.AuthCheck;
 import com.cjx.aiquestion.common.BaseResponse;
@@ -9,10 +10,10 @@ import com.cjx.aiquestion.common.ResultUtils;
 import com.cjx.aiquestion.constant.UserConstant;
 import com.cjx.aiquestion.exception.BusinessException;
 import com.cjx.aiquestion.exception.ThrowUtils;
-import com.cjx.aiquestion.model.dto.scoringResult.ScoringResultAddRequest;
-import com.cjx.aiquestion.model.dto.scoringResult.ScoringResultEditRequest;
-import com.cjx.aiquestion.model.dto.scoringResult.ScoringResultQueryRequest;
-import com.cjx.aiquestion.model.dto.scoringResult.ScoringResultUpdateRequest;
+import com.cjx.aiquestion.model.dto.scoringresult.ScoringResultAddRequest;
+import com.cjx.aiquestion.model.dto.scoringresult.ScoringResultEditRequest;
+import com.cjx.aiquestion.model.dto.scoringresult.ScoringResultQueryRequest;
+import com.cjx.aiquestion.model.dto.scoringresult.ScoringResultUpdateRequest;
 import com.cjx.aiquestion.model.entity.ScoringResult;
 import com.cjx.aiquestion.model.entity.User;
 import com.cjx.aiquestion.model.vo.ScoringResultVO;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * 评分结果接口
@@ -57,6 +59,9 @@ public class ScoringResultController {
         // todo 在此处将实体类和 DTO 进行转换
         ScoringResult scoringResult = new ScoringResult();
         BeanUtils.copyProperties(scoringResultAddRequest, scoringResult);
+        List<String> resultProp = scoringResultAddRequest.getResultProp();
+        String jsonStr = JSONUtil.toJsonStr(resultProp);
+        scoringResult.setResultProp(jsonStr);
         // 数据校验
         scoringResultService.validScoringResult(scoringResult, true);
         // todo 填充默认值
@@ -112,6 +117,9 @@ public class ScoringResultController {
         // todo 在此处将实体类和 DTO 进行转换
         ScoringResult scoringResult = new ScoringResult();
         BeanUtils.copyProperties(scoringResultUpdateRequest, scoringResult);
+        List<String> resultProp = scoringResultUpdateRequest.getResultProp();
+        String jsonStr = JSONUtil.toJsonStr(resultProp);
+        scoringResult.setResultProp(jsonStr);
         // 数据校验
         scoringResultService.validScoringResult(scoringResult, false);
         // 判断是否存在
@@ -218,6 +226,9 @@ public class ScoringResultController {
         // todo 在此处将实体类和 DTO 进行转换
         ScoringResult scoringResult = new ScoringResult();
         BeanUtils.copyProperties(scoringResultEditRequest, scoringResult);
+        List<String> resultProp = scoringResultEditRequest.getResultProp();
+        String jsonStr = JSONUtil.toJsonStr(resultProp);
+        scoringResult.setResultProp(jsonStr);
         // 数据校验
         scoringResultService.validScoringResult(scoringResult, false);
         User loginUser = userService.getLoginUser(request);

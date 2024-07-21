@@ -83,9 +83,14 @@ public class AppVO implements Serializable {
     private Date updateTime;
 
     /**
+     * 用户id
+     */
+    private Long userId;
+
+    /**
      * 创建人信息
      */
-    private UserVO createUserVO;
+    private UserVO user;
 
     /**
      * 封装类转对象

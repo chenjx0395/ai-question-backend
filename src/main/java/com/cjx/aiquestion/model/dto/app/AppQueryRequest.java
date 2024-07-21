@@ -1,8 +1,10 @@
 package com.cjx.aiquestion.model.dto.app;
 
 import com.cjx.aiquestion.common.PageRequest;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -15,6 +17,8 @@ import java.util.Date;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class AppQueryRequest extends PageRequest implements Serializable {
 
     /**
@@ -72,6 +76,10 @@ public class AppQueryRequest extends PageRequest implements Serializable {
      */
     private Long userId;
 
+    /**
+     * 搜索词
+     */
+    private String searchText;
 
 
     private static final long serialVersionUID = 1L;

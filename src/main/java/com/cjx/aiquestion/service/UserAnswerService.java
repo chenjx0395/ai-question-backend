@@ -3,7 +3,7 @@ package com.cjx.aiquestion.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.cjx.aiquestion.model.dto.userAnswer.UserAnswerQueryRequest;
+import com.cjx.aiquestion.model.dto.useranswer.UserAnswerQueryRequest;
 import com.cjx.aiquestion.model.entity.UserAnswer;
 import com.cjx.aiquestion.model.vo.UserAnswerVO;
 

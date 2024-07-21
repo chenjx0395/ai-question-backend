@@ -42,7 +42,7 @@ public class UserAnswerQueryRequest extends PageRequest implements Serializable 
     /**
      * 用户答案（JSON 数组）
      */
-    private List<String> choices;
+    private String choices;
 
     /**
      * 评分结果 id
@@ -73,6 +73,11 @@ public class UserAnswerQueryRequest extends PageRequest implements Serializable 
      * 用户 id
      */
     private Long userId;
+
+    /**
+     * 搜索词
+     */
+    private String searchText;
 
     private static final long serialVersionUID = 1L;
 }

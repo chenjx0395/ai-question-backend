@@ -31,5 +31,6 @@ public class UserAnswerUpdateRequest implements Serializable {
      */
     private List<String> choices;
 
+
     private static final long serialVersionUID = 1L;
 }

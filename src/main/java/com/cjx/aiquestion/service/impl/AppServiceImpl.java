@@ -11,6 +11,7 @@ import com.cjx.aiquestion.mapper.AppMapper;
 import com.cjx.aiquestion.model.dto.app.AppQueryRequest;
 import com.cjx.aiquestion.model.entity.App;
 import com.cjx.aiquestion.model.entity.User;
+import com.cjx.aiquestion.model.enums.AppTypeEnum;
 import com.cjx.aiquestion.model.vo.AppVO;
 import com.cjx.aiquestion.model.vo.UserVO;
 import com.cjx.aiquestion.service.AppService;
@@ -23,7 +24,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.HashMap;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,16 +53,28 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     public void validApp(App app, boolean add) {
         ThrowUtils.throwIf(app == null, ErrorCode.PARAMS_ERROR);
         // todo 从对象中取值
-        String title = app.getTitle();
+        String appName = app.getAppName();
         // 创建数据时，参数不能为空
         if (add) {
             // todo 补充校验规则
-            ThrowUtils.throwIf(StringUtils.isBlank(title), ErrorCode.PARAMS_ERROR);
+            ThrowUtils.throwIf(StringUtils.isBlank(appName), ErrorCode.PARAMS_ERROR);
+            // 校验枚举类型值是否存在
+//            ThrowUtils.throwIf(app.getAppType() == null, ErrorCode.PARAMS_ERROR, "应用类型不能为空");
+            //  校验枚举类型是否符合规范
+//            ThrowUtils.throwIf(  !AppTypeEnum.getValues().contains(app.getAppType()), ErrorCode.PARAMS_ERROR, "应用类型不存在");
+            // 校验枚举值思路2
+            Integer appType = app.getAppType();
+            AppTypeEnum enumByValue = AppTypeEnum.getEnumByValue(appType);
+            ThrowUtils.throwIf(enumByValue == null, ErrorCode.PARAMS_ERROR, "应用类型非法");
+
         }
         // 修改数据时，有参数则校验
+        // 以下主要是对数据合法性校验，比如应用题目的长度不能超过20
+        // 起作用的场合。1是插入数据时，会校验那些不为空的数据，当然是需要校验，我们才添设规则
+        // 2是更新数据，要更新的属性会不为空，那么它就会经历一次校验
         // todo 补充校验规则
-        if (StringUtils.isNotBlank(title)) {
-            ThrowUtils.throwIf(title.length() > 80, ErrorCode.PARAMS_ERROR, "标题过长");
+        if (StringUtils.isNotBlank(appName)) {
+            ThrowUtils.throwIf(appName.length() > 20, ErrorCode.PARAMS_ERROR, "标题过长");
         }
     }
 
@@ -79,31 +92,34 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         // todo 从对象中取值
         Long id = appQueryRequest.getId();
-        Long notId = appQueryRequest.getNotId();
-        String title = appQueryRequest.getTitle();
-        String content = appQueryRequest.getContent();
-        String searchText = appQueryRequest.getSearchText();
+        String appName = appQueryRequest.getAppName();
+        String appDesc = appQueryRequest.getAppDesc();
+        String appIcon = appQueryRequest.getAppIcon();
+        Integer appType = appQueryRequest.getAppType();
+        Integer scoringStrategy = appQueryRequest.getScoringStrategy();
+        Integer reviewStatus = appQueryRequest.getReviewStatus();
+        String reviewMessage = appQueryRequest.getReviewMessage();
+        Long reviewerId = appQueryRequest.getReviewerId();
+        Date reviewTime = appQueryRequest.getReviewTime();
+        Long userId = appQueryRequest.getUserId();
+        int current = appQueryRequest.getCurrent();
+        int pageSize = appQueryRequest.getPageSize();
         String sortField = appQueryRequest.getSortField();
         String sortOrder = appQueryRequest.getSortOrder();
-        List<String> tagList = appQueryRequest.getTags();
-        Long userId = appQueryRequest.getUserId();
+        String searchText = appQueryRequest.getSearchText();
+
         // todo 补充需要的查询条件
         // 从多字段中搜索
         if (StringUtils.isNotBlank(searchText)) {
             // 需要拼接查询条件
-            queryWrapper.and(qw -> qw.like("title", searchText).or().like("content", searchText));
+            queryWrapper.and(qw -> qw.like("appName", searchText).or().like("appDesc", searchText));
         }
         // 模糊查询
-        queryWrapper.like(StringUtils.isNotBlank(title), "title", title);
-        queryWrapper.like(StringUtils.isNotBlank(content), "content", content);
+        queryWrapper.like(StringUtils.isNotBlank(appName), "appName", appName);
+        queryWrapper.like(StringUtils.isNotBlank(appDesc), "appDesc", appDesc);
         // JSON 数组查询
-        if (CollUtil.isNotEmpty(tagList)) {
-            for (String tag : tagList) {
-                queryWrapper.like("tags", "\"" + tag + "\"");
-            }
-        }
+
         // 精确查询
-        queryWrapper.ne(ObjectUtils.isNotEmpty(notId), "id", notId);
         queryWrapper.eq(ObjectUtils.isNotEmpty(id), "id", id);
         queryWrapper.eq(ObjectUtils.isNotEmpty(userId), "userId", userId);
         // 排序规则
@@ -135,23 +151,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         UserVO userVO = userService.getUserVO(user);
         appVO.setUser(userVO);
-        // 2. 已登录，获取用户点赞、收藏状态
-        long appId = app.getId();
-        User loginUser = userService.getLoginUserPermitNull(request);
-        if (loginUser != null) {
-            // 获取点赞
-            QueryWrapper<AppThumb> appThumbQueryWrapper = new QueryWrapper<>();
-            appThumbQueryWrapper.in("appId", appId);
-            appThumbQueryWrapper.eq("userId", loginUser.getId());
-            AppThumb appThumb = appThumbMapper.selectOne(appThumbQueryWrapper);
-            appVO.setHasThumb(appThumb != null);
-            // 获取收藏
-            QueryWrapper<AppFavour> appFavourQueryWrapper = new QueryWrapper<>();
-            appFavourQueryWrapper.in("appId", appId);
-            appFavourQueryWrapper.eq("userId", loginUser.getId());
-            AppFavour appFavour = appFavourMapper.selectOne(appFavourQueryWrapper);
-            appVO.setHasFavour(appFavour != null);
-        }
+
         // endregion
 
         return appVO;
@@ -176,32 +176,14 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             return AppVO.objToVo(app);
         }).collect(Collectors.toList());
 
-        // todo 可以根据需要为封装对象补充值，不需要的内容可以删除
+        //  可以根据需要为封装对象补充值，不需要的内容可以删除
         // region 可选
         // 1. 关联查询用户信息
         Set<Long> userIdSet = appList.stream().map(App::getUserId).collect(Collectors.toSet());
         Map<Long, List<User>> userIdUserListMap = userService.listByIds(userIdSet).stream()
                 .collect(Collectors.groupingBy(User::getId));
-        // 2. 已登录，获取用户点赞、收藏状态
-        Map<Long, Boolean> appIdHasThumbMap = new HashMap<>();
-        Map<Long, Boolean> appIdHasFavourMap = new HashMap<>();
-        User loginUser = userService.getLoginUserPermitNull(request);
-        if (loginUser != null) {
-            Set<Long> appIdSet = appList.stream().map(App::getId).collect(Collectors.toSet());
-            loginUser = userService.getLoginUser(request);
-            // 获取点赞
-            QueryWrapper<AppThumb> appThumbQueryWrapper = new QueryWrapper<>();
-            appThumbQueryWrapper.in("appId", appIdSet);
-            appThumbQueryWrapper.eq("userId", loginUser.getId());
-            List<AppThumb> appAppThumbList = appThumbMapper.selectList(appThumbQueryWrapper);
-            appAppThumbList.forEach(appAppThumb -> appIdHasThumbMap.put(appAppThumb.getAppId(), true));
-            // 获取收藏
-            QueryWrapper<AppFavour> appFavourQueryWrapper = new QueryWrapper<>();
-            appFavourQueryWrapper.in("appId", appIdSet);
-            appFavourQueryWrapper.eq("userId", loginUser.getId());
-            List<AppFavour> appFavourList = appFavourMapper.selectList(appFavourQueryWrapper);
-            appFavourList.forEach(appFavour -> appIdHasFavourMap.put(appFavour.getAppId(), true));
-        }
+
+
         // 填充信息
         appVOList.forEach(appVO -> {
             Long userId = appVO.getUserId();
@@ -210,8 +192,6 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
                 user = userIdUserListMap.get(userId).get(0);
             }
             appVO.setUser(userService.getUserVO(user));
-            appVO.setHasThumb(appIdHasThumbMap.getOrDefault(appVO.getId(), false));
-            appVO.setHasFavour(appIdHasFavourMap.getOrDefault(appVO.getId(), false));
         });
         // endregion
 

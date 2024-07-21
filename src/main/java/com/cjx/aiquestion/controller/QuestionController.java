@@ -1,5 +1,6 @@
 package com.cjx.aiquestion.controller;
 
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cjx.aiquestion.annotation.AuthCheck;
 import com.cjx.aiquestion.common.BaseResponse;
@@ -57,6 +58,8 @@ public class QuestionController {
         // todo 在此处将实体类和 DTO 进行转换
         Question question = new Question();
         BeanUtils.copyProperties(questionAddRequest, question);
+        String jsonStr = JSONUtil.toJsonStr(questionAddRequest.getQuestionContent());
+        question.setQuestionContent(jsonStr);
         // 数据校验
         questionService.validQuestion(question, true);
         // todo 填充默认值
@@ -112,6 +115,8 @@ public class QuestionController {
         // todo 在此处将实体类和 DTO 进行转换
         Question question = new Question();
         BeanUtils.copyProperties(questionUpdateRequest, question);
+        String jsonStr = JSONUtil.toJsonStr(questionUpdateRequest.getQuestionContent());
+        question.setQuestionContent(jsonStr);
         // 数据校验
         questionService.validQuestion(question, false);
         // 判断是否存在
@@ -218,6 +223,8 @@ public class QuestionController {
         // todo 在此处将实体类和 DTO 进行转换
         Question question = new Question();
         BeanUtils.copyProperties(questionEditRequest, question);
+        String jsonStr = JSONUtil.toJsonStr(questionEditRequest.getQuestionContent());
+        question.setQuestionContent(jsonStr);
         // 数据校验
         questionService.validQuestion(question, false);
         User loginUser = userService.getLoginUser(request);

@@ -7,20 +7,21 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 应用类型枚举类
+ * 审核状态枚举类
  *
  * @author cjx
  */
-public enum AppTypeEnum {
+public enum ReviewStatusEnum {
 
-    SCORE("得分类", 0),
-    EVALUATION("测评类", 1);
+    TO_BE_REVIEWED("待审核", 0),
+    PASS("通过", 1),
+    TURN_DOWN("拒绝", 2);
 
     private final String text;
 
     private final int value;
 
-    AppTypeEnum(String text, int value) {
+    ReviewStatusEnum(String text, int value) {
         this.text = text;
         this.value = value;
     }
@@ -40,11 +41,11 @@ public enum AppTypeEnum {
      * @param value
      * @return
      */
-    public static AppTypeEnum getEnumByValue(Integer value) {
+    public static ReviewStatusEnum getEnumByValue(Integer value) {
         if (ObjectUtils.isEmpty(value)) {
             return null;
         }
-        for (AppTypeEnum anEnum : AppTypeEnum.values()) {
+        for (ReviewStatusEnum anEnum : ReviewStatusEnum.values()) {
             if (anEnum.value == value) {
                 return anEnum;
             }

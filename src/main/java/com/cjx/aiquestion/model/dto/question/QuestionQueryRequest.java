@@ -20,6 +20,11 @@ import java.util.List;
 public class QuestionQueryRequest extends PageRequest implements Serializable {
 
     /**
+     * 搜索词
+     */
+    private String searchText;
+
+    /**
      * id
      */
     private Long id;
@@ -27,7 +32,7 @@ public class QuestionQueryRequest extends PageRequest implements Serializable {
     /**
      * 题目内容（json格式）
      */
-    private QuestionContentDTO questionContent;
+    private String questionContent;
 
     /**
      * 应用 id
