@@ -10,13 +10,14 @@ import com.cjx.aiquestion.common.ResultUtils;
 import com.cjx.aiquestion.constant.UserConstant;
 import com.cjx.aiquestion.exception.BusinessException;
 import com.cjx.aiquestion.exception.ThrowUtils;
-import com.cjx.aiquestion.model.dto.question.QuestionAddRequest;
-import com.cjx.aiquestion.model.dto.question.QuestionEditRequest;
-import com.cjx.aiquestion.model.dto.question.QuestionQueryRequest;
-import com.cjx.aiquestion.model.dto.question.QuestionUpdateRequest;
+import com.cjx.aiquestion.manager.ZhiPuAiManager;
+import com.cjx.aiquestion.model.dto.question.*;
+import com.cjx.aiquestion.model.entity.App;
 import com.cjx.aiquestion.model.entity.Question;
 import com.cjx.aiquestion.model.entity.User;
+import com.cjx.aiquestion.model.enums.AppTypeEnum;
 import com.cjx.aiquestion.model.vo.QuestionVO;
+import com.cjx.aiquestion.service.AppService;
 import com.cjx.aiquestion.service.QuestionService;
 import com.cjx.aiquestion.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -25,12 +26,15 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.Objects;
+
+import static com.cjx.aiquestion.constant.Prompt.SYS_SET_QUESTION_PROMPT;
 
 /**
  * 题目接口
  *
  * @author cjx
- *
  */
 @RestController
 @RequestMapping("/question")
@@ -42,6 +46,12 @@ public class QuestionController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private AppService appService;
+
+    @Resource
+    private ZhiPuAiManager zhiPuAiManager;
 
     // region 增删改查
 
@@ -241,6 +251,39 @@ public class QuestionController {
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(true);
     }
+
+
+    // endregion
+
+    //region AI生成题目
+    @PostMapping("/ai_generate")
+    public BaseResponse<List<QuestionContentDTO>> aiGenerateQuestion(@RequestBody AiGenerateQuestionRequest aiGenerateQuestionRequest) {
+        ThrowUtils.throwIf(aiGenerateQuestionRequest == null, ErrorCode.PARAMS_ERROR);
+        // 获取参数
+        Long appId = aiGenerateQuestionRequest.getAppId();
+        int questionNumber = aiGenerateQuestionRequest.getQuestionNumber();
+        int optionNumber = aiGenerateQuestionRequest.getOptionNumber();
+        App app = appService.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
+        // 封装 Prompt
+        String userMessage = getGenerateQuestionUserMessage(app, questionNumber, optionNumber);
+        // AI 生成
+        String result = zhiPuAiManager.doStabilizeSysInvokeChatRequest(SYS_SET_QUESTION_PROMPT, userMessage);
+        // 结果处理
+        List<QuestionContentDTO> questionContentDTOList = JSONUtil.toList(result, QuestionContentDTO.class);
+        return ResultUtils.success(questionContentDTOList);
+    }
+
+
+    private String getGenerateQuestionUserMessage(App app, int questionNumber, int optionNumber) {
+        String userMessage = app.getAppName() + "\n" +
+                app.getAppDesc() + "\n" +
+                Objects.requireNonNull(AppTypeEnum.getEnumByValue(app.getAppType())).getText() + "类" + "\n" +
+                questionNumber + "\n" +
+                optionNumber;
+        return userMessage;
+    }
+
 
     // endregion
 }

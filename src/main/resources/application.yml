@@ -101,3 +101,9 @@ knife4j:
         api-rule: package
         api-rule-resources:
           - com.cjx.aiquestion.controller
+# 智谱AI
+zhipu:
+  ai:
+    apiKey: 703c8fc9435803ad6754d6337c56084e.X1gRRtHCPIUSnzt9
+
+    # todo 需替换配置

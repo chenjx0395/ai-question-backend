@@ -74,7 +74,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 2是更新数据，要更新的属性会不为空，那么它就会经历一次校验
         // todo 补充校验规则
         if (StringUtils.isNotBlank(appName)) {
-            ThrowUtils.throwIf(appName.length() > 20, ErrorCode.PARAMS_ERROR, "标题过长");
+                ThrowUtils.throwIf(appName.length() > 20, ErrorCode.PARAMS_ERROR, "标题过长");
         }
     }
 
