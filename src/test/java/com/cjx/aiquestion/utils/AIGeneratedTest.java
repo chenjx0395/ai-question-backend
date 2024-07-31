@@ -1,14 +1,13 @@
 package com.cjx.aiquestion.utils;
 
+import com.alibaba.fastjson.JSON;
 import com.cjx.aiquestion.manager.ZhiPuAiManager;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhipu.oapi.ClientV4;
 import com.zhipu.oapi.Constants;
-import com.zhipu.oapi.service.v4.model.ChatCompletionRequest;
-import com.zhipu.oapi.service.v4.model.ChatMessage;
-import com.zhipu.oapi.service.v4.model.ChatMessageRole;
-import com.zhipu.oapi.service.v4.model.ModelApiResponse;
+import com.zhipu.oapi.service.v4.model.*;
+import io.reactivex.schedulers.Schedulers;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -16,8 +15,10 @@ import javax.annotation.Resource;
 import javax.xml.ws.ResponseWrapper;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.cjx.aiquestion.constant.Prompt.SYS_SET_QUESTION_PROMPT;
+import static com.zhipu.oapi.demo.V4OkHttpClientTest.mapStreamToAccumulator;
 
 /**
  * ai功能测试类
@@ -73,7 +74,27 @@ public class AIGeneratedTest {
                 "得分类，\n" +
                 "10，\n" +
                 "3\n";
-        System.out.println(zhiPuAiManager.doStabilizeSysInvokeChatRequest(SYS_SET_QUESTION_PROMPT,userMessage));
+        System.out.println(zhiPuAiManager.doStabilizeSysInvokeChatRequest(SYS_SET_QUESTION_PROMPT, userMessage));
     }
+
+    @Test
+    public void test3() throws InterruptedException {
+        String userMessage = "小学数学测验，\n" +
+                "【【【小学三年级的数学题】】】，\n" +
+                "得分类，\n" +
+                "5，\n" +
+                "2\n";
+        ModelApiResponse sseModelApiResp = zhiPuAiManager.doSysStreamStableChatRequest(SYS_SET_QUESTION_PROMPT, userMessage);
+        sseModelApiResp.getFlowable()
+                .observeOn(Schedulers.io()) // 或者选择其他合适的调度器
+                .map(chunk -> chunk.getChoices().get(0).getDelta().getContent())
+                .doOnNext(System.out::println)
+                .subscribe();
+
+        Thread.sleep(30000L);
+
+
+    }
+
 
 }

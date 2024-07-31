@@ -66,7 +66,7 @@ public class AiTestScoringStrategy implements ScoringStrategy {
             // 封装 Prompt
             String userMessage = getAiTestScoringUserMessage(app, questionContent, choices);
             // AI 生成
-            String result = aiManager.doNoStabilizeSysInvokeChatRequest(SYS_ANSWER_PROMPT, userMessage);
+            String result = aiManager.doStabilizeSysInvokeChatRequest(SYS_ANSWER_PROMPT, userMessage);
             // 结果处理
             int start = result.indexOf("{");
             int end = result.lastIndexOf("}");

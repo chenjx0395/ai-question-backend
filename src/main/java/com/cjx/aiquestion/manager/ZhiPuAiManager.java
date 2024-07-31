@@ -26,26 +26,50 @@ public class ZhiPuAiManager {
     @Resource
     private ClientV4 client;
 
-    // 较稳定的随机数
+    // 稳定的随机数
     private static final float STABLE_TEMPERATURE = 0.05f;
 
     // 不稳定的随机数
     private static final float UNSTABLE_TEMPERATURE = 0.99f;
 
+
     /**
-     * 不稳定调用
+     * 稳定的流式调用
      * @param sysMessage
      * @param userMessage
      * @return
      */
-    public String doNoStabilizeSysInvokeChatRequest(String sysMessage
+    public ModelApiResponse doSysStreamStableChatRequest(String sysMessage
             , String userMessage
     ) {
-        return doSysInvokeChatRequest(sysMessage, userMessage, UNSTABLE_TEMPERATURE);
+        return doSysStreamChatRequest(sysMessage, userMessage, STABLE_TEMPERATURE);
     }
 
     /**
+     * 流式调用
+     *
+     * @param sysMessage
+     * @param userMessage
+     * @param temperature
+     * @return
+     */
+    public ModelApiResponse doSysStreamChatRequest(String sysMessage
+            , String userMessage
+            , Float temperature
+    ) {
+
+        List<ChatMessage> messages = new ArrayList<>();
+        messages.add(new ChatMessage(ChatMessageRole.SYSTEM.value(), sysMessage));
+        messages.add(new ChatMessage(ChatMessageRole.USER.value(), userMessage));
+
+        return doBaseRequest(messages, Constants.ModelChatGLM4, Boolean.TRUE, Constants.invokeMethod, temperature);
+
+    }
+
+
+    /**
      * 稳定调用
+     *
      * @param sysMessage
      * @param userMessage
      * @return
@@ -54,6 +78,19 @@ public class ZhiPuAiManager {
             , String userMessage
     ) {
         return doSysInvokeChatRequest(sysMessage, userMessage, STABLE_TEMPERATURE);
+    }
+
+    /**
+     * 不稳定调用
+     *
+     * @param sysMessage
+     * @param userMessage
+     * @return
+     */
+    public String doNoStabilizeSysInvokeChatRequest(String sysMessage
+            , String userMessage
+    ) {
+        return doSysInvokeChatRequest(sysMessage, userMessage, UNSTABLE_TEMPERATURE);
     }
 
 
@@ -69,6 +106,9 @@ public class ZhiPuAiManager {
             , String userMessage
             , Float temperature
     ) {
+
+
+
         return doSysChatRequest(sysMessage, userMessage, Boolean.FALSE, Constants.invokeMethod, temperature);
     }
 
@@ -117,15 +157,7 @@ public class ZhiPuAiManager {
             messages.add(new ChatMessage(ChatMessageRole.USER.value(), userMessage));
 
 
-            ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
-                    .model(model)
-                    .stream(isStream)
-                    .invokeMethod(invokeMethod)
-                    .temperature(temperature)
-                    .messages(messages)
-                    .build();
-
-            ModelApiResponse modelApiResponse = client.invokeModelApi(chatCompletionRequest);
+            ModelApiResponse modelApiResponse = doBaseRequest(messages, model, isStream, invokeMethod, temperature);
             String result = modelApiResponse.getData().getChoices().get(0).getMessage().getContent().toString();
             return result;
         } catch (RuntimeException e) {

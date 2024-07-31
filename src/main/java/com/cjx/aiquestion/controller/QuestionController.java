@@ -1,5 +1,6 @@
 package com.cjx.aiquestion.controller;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cjx.aiquestion.annotation.AuthCheck;
@@ -20,14 +21,23 @@ import com.cjx.aiquestion.model.vo.QuestionVO;
 import com.cjx.aiquestion.service.AppService;
 import com.cjx.aiquestion.service.QuestionService;
 import com.cjx.aiquestion.service.UserService;
+import com.zhipu.oapi.service.v4.model.ModelApiResponse;
+import com.zhipu.oapi.service.v4.model.ModelData;
+import io.reactivex.Flowable;
+import io.reactivex.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.info.ProjectInfoProperties;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.cjx.aiquestion.constant.Prompt.SYS_SET_QUESTION_PROMPT;
 
@@ -52,6 +62,8 @@ public class QuestionController {
 
     @Resource
     private ZhiPuAiManager zhiPuAiManager;
+    @Autowired
+    private ProjectInfoProperties projectInfoProperties;
 
     // region 增删改查
 
@@ -256,6 +268,13 @@ public class QuestionController {
     // endregion
 
     //region AI生成题目
+
+    /**
+     * 同步调用ai生成题目
+     *
+     * @param aiGenerateQuestionRequest
+     * @return
+     */
     @PostMapping("/ai_generate")
     public BaseResponse<List<QuestionContentDTO>> aiGenerateQuestion(@RequestBody AiGenerateQuestionRequest aiGenerateQuestionRequest) {
         ThrowUtils.throwIf(aiGenerateQuestionRequest == null, ErrorCode.PARAMS_ERROR);
@@ -268,7 +287,7 @@ public class QuestionController {
         // 封装 Prompt
         String userMessage = getGenerateQuestionUserMessage(app, questionNumber, optionNumber);
         // AI 生成
-        String result = zhiPuAiManager.doNoStabilizeSysInvokeChatRequest(SYS_SET_QUESTION_PROMPT, userMessage);
+        String result = zhiPuAiManager.doStabilizeSysInvokeChatRequest(SYS_SET_QUESTION_PROMPT, userMessage);
         // 结果处理
         int start = result.indexOf("[");
         int end = result.lastIndexOf("]");
@@ -279,6 +298,76 @@ public class QuestionController {
     }
 
 
+    @GetMapping("/ai_generate/sse")
+    public SseEmitter aiSseGenerateQuestion(AiGenerateQuestionRequest aiGenerateQuestionRequest) {
+        ThrowUtils.throwIf(aiGenerateQuestionRequest == null, ErrorCode.PARAMS_ERROR);
+        // 获取参数
+        Long appId = aiGenerateQuestionRequest.getAppId();
+        int questionNumber = aiGenerateQuestionRequest.getQuestionNumber();
+        int optionNumber = aiGenerateQuestionRequest.getOptionNumber();
+        App app = appService.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
+        // 封装 Prompt
+        String userMessage = getGenerateQuestionUserMessage(app, questionNumber, optionNumber);
+
+        //建立SSE连接对象，0 表示不超时
+        SseEmitter emitter = new SseEmitter(0L);
+
+        AtomicInteger counter = new AtomicInteger(0);
+        StringBuilder stringBuilder = new StringBuilder();
+
+
+        // AI 生成，sse 流式返回
+        ModelApiResponse modelApiResponse = zhiPuAiManager.doSysStreamStableChatRequest(SYS_SET_QUESTION_PROMPT, userMessage);
+        Flowable<ModelData> flowable = modelApiResponse.getFlowable();
+        flowable
+                // 异步线程池执行
+                .observeOn(Schedulers.io())
+                .map(chunk -> chunk.getChoices().get(0).getDelta().getContent())
+                .map(message -> message.replaceAll("\\s", ""))
+                .filter(StrUtil::isNotBlank)
+                .flatMap(message -> {
+                    // 将字符串转换为 List<Character>
+                    List<Character> charList = new ArrayList<>();
+                    for (char c : message.toCharArray()) {
+                        charList.add(c);
+                    }
+                    return Flowable.fromIterable(charList);
+                })
+                .doOnNext(c -> {
+                    if (c == '{') {
+                        counter.addAndGet(1);
+                    }
+                    if (counter.get() > 0) {
+                        stringBuilder.append(c);
+                    }
+                    if (c == '}') {
+                        counter.addAndGet(-1);
+                        if (counter.get() == 0) {
+                            // 可以拼接题目，并且通过 SSE 返回给前端
+                            emitter.send(JSONUtil.toJsonStr(stringBuilder.toString()));
+                            // 重置，准备拼接下一道题
+                            stringBuilder.setLength(0);
+                        }
+                    }
+                })
+                .doOnError((e) -> log.error("sse error", e))
+                .doOnComplete(emitter::complete)
+                .subscribe();
+
+
+        return emitter;
+    }
+
+
+    /**
+     * 用户问题信息格式化
+     *
+     * @param app
+     * @param questionNumber
+     * @param optionNumber
+     * @return
+     */
     private String getGenerateQuestionUserMessage(App app, int questionNumber, int optionNumber) {
         String userMessage = app.getAppName() + "\n" +
                 app.getAppDesc() + "\n" +
