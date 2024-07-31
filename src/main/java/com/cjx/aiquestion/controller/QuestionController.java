@@ -268,9 +268,13 @@ public class QuestionController {
         // 封装 Prompt
         String userMessage = getGenerateQuestionUserMessage(app, questionNumber, optionNumber);
         // AI 生成
-        String result = zhiPuAiManager.doStabilizeSysInvokeChatRequest(SYS_SET_QUESTION_PROMPT, userMessage);
+        String result = zhiPuAiManager.doNoStabilizeSysInvokeChatRequest(SYS_SET_QUESTION_PROMPT, userMessage);
         // 结果处理
-        List<QuestionContentDTO> questionContentDTOList = JSONUtil.toList(result, QuestionContentDTO.class);
+        int start = result.indexOf("[");
+        int end = result.lastIndexOf("]");
+        String json = result.substring(start, end + 1);
+        List<QuestionContentDTO> questionContentDTOList = JSONUtil.toList(json, QuestionContentDTO.class);
+
         return ResultUtils.success(questionContentDTOList);
     }
 
