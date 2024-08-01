@@ -1,5 +1,7 @@
 package com.cjx.aiquestion.controller;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.digest.DigestUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cjx.aiquestion.annotation.AuthCheck;
@@ -22,6 +24,8 @@ import com.cjx.aiquestion.scoring.ScoringStrategyExecutor;
 import com.cjx.aiquestion.service.AppService;
 import com.cjx.aiquestion.service.UserAnswerService;
 import com.cjx.aiquestion.service.UserService;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
@@ -29,12 +33,12 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 用户答题记录接口
  *
  * @author cjx
- *
  */
 @RestController
 @RequestMapping("/userAnswer")
@@ -50,6 +54,7 @@ public class UserAnswerController {
     private ScoringStrategyExecutor scoringStrategyExecutor;
     @Resource
     private AppService appService;
+
 
     // region 增删改查
 
@@ -92,6 +97,7 @@ public class UserAnswerController {
         }
         return ResultUtils.success(newUserAnswerId);
     }
+
 
     /**
      * 删除用户答题记录
@@ -192,7 +198,7 @@ public class UserAnswerController {
      */
     @PostMapping("/list/page/vo")
     public BaseResponse<Page<UserAnswerVO>> listUserAnswerVOByPage(@RequestBody UserAnswerQueryRequest userAnswerQueryRequest,
-                                                               HttpServletRequest request) {
+                                                                   HttpServletRequest request) {
         long current = userAnswerQueryRequest.getCurrent();
         long size = userAnswerQueryRequest.getPageSize();
         // 限制爬虫
@@ -213,7 +219,7 @@ public class UserAnswerController {
      */
     @PostMapping("/my/list/page/vo")
     public BaseResponse<Page<UserAnswerVO>> listMyUserAnswerVOByPage(@RequestBody UserAnswerQueryRequest userAnswerQueryRequest,
-                                                                 HttpServletRequest request) {
+                                                                     HttpServletRequest request) {
         ThrowUtils.throwIf(userAnswerQueryRequest == null, ErrorCode.PARAMS_ERROR);
         // 补充查询条件，只查询当前登录用户的数据
         User loginUser = userService.getLoginUser(request);
