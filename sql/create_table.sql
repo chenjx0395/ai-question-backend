@@ -97,7 +97,7 @@ create table if not exists user_answer
 ) comment '用户答题记录' collate = utf8mb4_unicode_ci;
 
 -- 用户答题记录表2
-create table if not exists user_answer_0
+create table if not exists user_answer_1
 (
     id              bigint auto_increment primary key,
     appId           bigint                             not null comment '应用 id',

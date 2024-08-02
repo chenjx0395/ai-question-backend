@@ -1,7 +1,6 @@
 package com.cjx.aiquestion.controller;
 
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.digest.DigestUtil;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cjx.aiquestion.annotation.AuthCheck;
@@ -9,9 +8,11 @@ import com.cjx.aiquestion.common.BaseResponse;
 import com.cjx.aiquestion.common.DeleteRequest;
 import com.cjx.aiquestion.common.ErrorCode;
 import com.cjx.aiquestion.common.ResultUtils;
+import com.cjx.aiquestion.config.VipSchedulerConfig;
 import com.cjx.aiquestion.constant.UserConstant;
 import com.cjx.aiquestion.exception.BusinessException;
 import com.cjx.aiquestion.exception.ThrowUtils;
+import com.cjx.aiquestion.model.dto.question.AiGenerateQuestionRequest;
 import com.cjx.aiquestion.model.dto.useranswer.UserAnswerAddRequest;
 import com.cjx.aiquestion.model.dto.useranswer.UserAnswerEditRequest;
 import com.cjx.aiquestion.model.dto.useranswer.UserAnswerQueryRequest;
@@ -24,16 +25,17 @@ import com.cjx.aiquestion.scoring.ScoringStrategyExecutor;
 import com.cjx.aiquestion.service.AppService;
 import com.cjx.aiquestion.service.UserAnswerService;
 import com.cjx.aiquestion.service.UserService;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
+import io.reactivex.Scheduler;
+import io.reactivex.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 用户答题记录接口
@@ -54,6 +56,7 @@ public class UserAnswerController {
     private ScoringStrategyExecutor scoringStrategyExecutor;
     @Resource
     private AppService appService;
+
 
 
     // region 增删改查
@@ -82,14 +85,20 @@ public class UserAnswerController {
         User loginUser = userService.getLoginUser(request);
         userAnswer.setUserId(loginUser.getId());
         // 写入数据库
-        boolean result = userAnswerService.save(userAnswer);
-        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        try {
+            boolean result = userAnswerService.save(userAnswer);
+            ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        } catch (DuplicateKeyException e) {
+            // ignore error
+        }
+
         // 返回新写入的数据 id
         long newUserAnswerId = userAnswer.getId();
         // 调用评分模块
         try {
             UserAnswer userAnswerWithResult = scoringStrategyExecutor.doScore(choices, app);
             userAnswerWithResult.setId(newUserAnswerId);
+            userAnswerWithResult.setAppId(null);
             userAnswerService.updateById(userAnswerWithResult);
         } catch (Exception e) {
             e.printStackTrace();
@@ -271,4 +280,15 @@ public class UserAnswerController {
     }
 
     // endregion
+
+    @GetMapping("/generate/id")
+    public BaseResponse<Long> generateUserAnswerId() {
+        return ResultUtils.success(IdUtil.getSnowflakeNextId());
+    }
+
+
+
+
+
+
 }

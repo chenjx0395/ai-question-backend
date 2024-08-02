@@ -55,6 +55,7 @@ public class UserAnswerServiceImpl extends ServiceImpl<UserAnswerMapper, UserAns
         ThrowUtils.throwIf(userAnswer == null, ErrorCode.PARAMS_ERROR);
         // todo 从对象中取值
         Long appId = userAnswer.getAppId();
+        Long id = userAnswer.getId();
         Integer appType = userAnswer.getAppType();
         Integer scoringStrategy = userAnswer.getScoringStrategy();
         String choices = userAnswer.getChoices();
@@ -67,6 +68,7 @@ public class UserAnswerServiceImpl extends ServiceImpl<UserAnswerMapper, UserAns
         if (add) {
             // todo 补充校验规则
             ThrowUtils.throwIf(appId == null || appId <= 0 , ErrorCode.PARAMS_ERROR);
+            ThrowUtils.throwIf(id == null || id <= 0 , ErrorCode.PARAMS_ERROR);
 
         }
         // 修改数据时，有参数则校验

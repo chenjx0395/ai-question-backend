@@ -24,6 +24,7 @@ import com.cjx.aiquestion.service.UserService;
 import com.zhipu.oapi.service.v4.model.ModelApiResponse;
 import com.zhipu.oapi.service.v4.model.ModelData;
 import io.reactivex.Flowable;
+import io.reactivex.Scheduler;
 import io.reactivex.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -64,6 +65,9 @@ public class QuestionController {
     private ZhiPuAiManager zhiPuAiManager;
     @Autowired
     private ProjectInfoProperties projectInfoProperties;
+    // 注入 VIP 线程池
+    @Resource
+    private Scheduler vipScheduler;
 
     // region 增删改查
 
@@ -299,7 +303,10 @@ public class QuestionController {
 
 
     @GetMapping("/ai_generate/sse")
-    public SseEmitter aiSseGenerateQuestion(AiGenerateQuestionRequest aiGenerateQuestionRequest) {
+    public SseEmitter aiSseGenerateQuestion(
+            AiGenerateQuestionRequest aiGenerateQuestionRequest,
+            HttpServletRequest request
+    ) {
         ThrowUtils.throwIf(aiGenerateQuestionRequest == null, ErrorCode.PARAMS_ERROR);
         // 获取参数
         Long appId = aiGenerateQuestionRequest.getAppId();
@@ -320,9 +327,19 @@ public class QuestionController {
         // AI 生成，sse 流式返回
         ModelApiResponse modelApiResponse = zhiPuAiManager.doSysStreamStableChatRequest(SYS_SET_QUESTION_PROMPT, userMessage);
         Flowable<ModelData> flowable = modelApiResponse.getFlowable();
+
+        // 默认全局线程池
+        Scheduler scheduler = Schedulers.single();
+        User loginUser = userService.getLoginUser(request);
+        // 如果用户是 VIP，则使用定制线程池
+        if ("vip".equals(loginUser.getUserRole())) {
+            scheduler = vipScheduler;
+        }
+
+
         flowable
                 // 异步线程池执行
-                .observeOn(Schedulers.io())
+                .observeOn(scheduler)
                 .map(chunk -> chunk.getChoices().get(0).getDelta().getContent())
                 .map(message -> message.replaceAll("\\s", ""))
                 .filter(StrUtil::isNotBlank)
