@@ -12,10 +12,9 @@ spring:
     username: root
     password: 12345678
   # Redis 配置
-  # todo 需替换配置
   redis:
     database: 1
-    host: localhost
+    host: 120.76.241.179
     port: 6379
     timeout: 5000
     password: 123456
